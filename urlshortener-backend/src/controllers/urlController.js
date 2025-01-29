@@ -6,7 +6,7 @@ const Log = require("../models/Log");
 const shortenUrl = async (req, res) => {
   try {
     const { nanoid } = await import('nanoid');
-    const { longUrl } = req.body;
+    const { longUrl,name } = req.body;
     const user = req.user;
 
     if (!validator.isURL(longUrl)) {
@@ -20,15 +20,16 @@ const shortenUrl = async (req, res) => {
   
     // Generate a unique short ID
     const shortId = nanoid(6);
-  
-    const url = new Url({ longUrl, shortId, user: user._id });
+    const shortUrl = `${process.env.url}/v1/${shortId}`;
+
+    const url = new Url({ longUrl, shortId, shortUrl, user: user._id, name });
     await url.save();
   
     return res.status(201).json({
       code: "API.SHORTURL.CREATION.ACCEPT",
       message: "new shortul created",
       success: true,
-      data: { shortUrl: `${process.env.url}/${shortId}` }
+      data: url
     });
   } catch (error) {
     res.status(500).json({
@@ -44,7 +45,7 @@ const listUserUrls = async (req, res) => {
   try{
     const user = req.user;
 
-    const urls = await Url.find({ user: user._id }).populate('user', 'name');
+    const urls = await Url.find({ user: user._id }).sort({ createdAt: -1 }).populate('user', 'name');
     return res.status(200).json({
       code: "API.SHORTURL.LIST.ACCEPT",
       message: "get utls list",
@@ -64,12 +65,21 @@ const listUserUrls = async (req, res) => {
 const updateUrl = async (req, res) => {
   try{
     const { shortId } = req.params;
-    const { longUrl, expiresAt } = req.body;
+    const { longUrl, expiresAt, name } = req.body;
     const user = req.user;
   
-    
-    const url = await Url.findOne({ shortId, user: user._id });
-  
+    const url = await Url.findOne({ shortId });
+
+    // Test if user has permission to update the URL
+    if (url.user._id.toString() != user._id.toString()) {
+      return res.status(401).json({
+        code: "API.SHORTURL.UPDATE.FAIL",
+        message: "URL not found or unauthorized",
+        success: false,
+        error: "URL not found or unauthorized"
+      });
+    }
+
     if (!url) {
       return res.status(404).json({
         code: "API.SHORTURL.UPDATE.FAIL",
@@ -81,6 +91,7 @@ const updateUrl = async (req, res) => {
   
     if (longUrl) url.longUrl = longUrl;
     if (expiresAt) url.expiresAt = expiresAt;
+    if (name) url.name = name;
     await url.save();
   
     return res.status(200).json({
@@ -128,7 +139,6 @@ const redirectToUrl = async (req, res) => {
     const { shortened_id } = req.params;
     console.log(shortened_id);
     const url = await Url.findOne({ shortId: shortened_id });
-    console.log(shortened_id);
     
     if (!url) {
         return res.status(404).json({ error: "URL not found" });

@@ -1,14 +1,9 @@
 const express = require('express');
 const { shortenUrl, redirectToUrl, listUserUrls, updateUrl, deleteUrl } = require('../controllers/urlController');
 const checkUser = require('../middleware/checkUser');
-const rateLimit = require('express-rate-limit');
 
 const router = express.Router();
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-});
 
 // GET /:shortId - Redirect to the original URL
 router.get("/:shortened_id", redirectToUrl);
@@ -16,7 +11,7 @@ router.get("/:shortened_id", redirectToUrl);
 router.use(checkUser);
 
 // POST /shorten - Shorten a URL
-router.post('/shorten', limiter, shortenUrl);
+router.post('/shorten', shortenUrl);
 
 // GET /user/urls - List all URLs created by a specific user
 router.get('/user/urls', listUserUrls);
