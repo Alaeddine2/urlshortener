@@ -10,13 +10,13 @@ const limiter = rateLimit({
   max: 100, // Limit each IP to 100 requests per windowMs
 });
 
+// GET /:shortId - Redirect to the original URL
+router.get("/:shortened_id", redirectToUrl);
+
 router.use(checkUser);
 
 // POST /shorten - Shorten a URL
 router.post('/shorten', limiter, shortenUrl);
-
-// GET /:shortId - Redirect to the original URL
-router.get('/:shortId', redirectToUrl);
 
 // GET /user/urls - List all URLs created by a specific user
 router.get('/user/urls', listUserUrls);

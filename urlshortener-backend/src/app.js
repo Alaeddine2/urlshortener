@@ -1,20 +1,22 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const urlRoutes = require('./routes/urlRoutes');
+const mainRoute = require('./routes/mainRoutes');
 const connectDB = require('./config/db');
-
+const cors = require("cors");
 dotenv.config();
 
+
 const app = express();
+app.use(cors());
 
 // Connect to databse
 connectDB();
 
-app.use(express.json()); // Parse JSON bodies
+app.use(express.json());
 
 // Routes
-app.use('/', urlRoutes);
+app.use('/v1/', mainRoute)
+
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
