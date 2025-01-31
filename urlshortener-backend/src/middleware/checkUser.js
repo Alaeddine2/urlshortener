@@ -1,29 +1,27 @@
 const User = require('../models/User');
 
 const checkUser = async (req, res, next) => {
-  const fingerprint = req.headers["x-fingerprint"]; // get the fingerprint as an identificator of the deivce user
-  console.log(fingerprint);
-  
-  if (!fingerprint) {
-      return res.status(400).json({ error: "Fingerprint is required" });
-  }
-
   try {
-      // Check if the user already exists
-      let user = await User.findOne({ fingerprint });
+    const fingerprint = req.headers?.["x-fingerprint"];
+    if (!fingerprint) {
+      return res.status(400).json({ error: "Fingerprint is required" });
+    }
 
-      if (!user) {
+    let user = await User.findOne({ fingerprint });
+   /* if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }*/
 
-          // Create a new user
-          user = new User({ fingerprint });
-          await user.save();
-      }
-
-      req.user = user;
-      next();
+    if (!user) {
+      // Create a new user
+      user = new User({ fingerprint });
+      await user.save();
+    }
+    req.user = user;
+    next();
   } catch (error) {
-      console.error("Error in checkUser middleware:", error);
-      res.status(500).json({ error: "Internal Server Error" });
+    console.error("Database Error in checkUser middleware:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 

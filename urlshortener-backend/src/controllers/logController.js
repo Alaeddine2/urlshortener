@@ -5,10 +5,10 @@ const getLogsForUrl = async (req, res) => {
     try {
         const { shortId } = req.params;
         const user = req.user;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-
-        if (isNaN(page) || isNaN(limit) || page < 1 || limit < 1) {
+        const page = req.query.page && !isNaN(req.query.page) ? parseInt(req.query.page) : null;
+        const limit = req.query.limit && !isNaN(req.query.limit) ? parseInt(req.query.limit) : null;
+        
+        if (page === null || limit === null || page < 1 || limit < 1) {
             return res.status(400).json({
                 code: "API.LOG.LIST.FAIL",
                 message: "Invalid pagination parameters",
@@ -44,7 +44,6 @@ const getLogsForUrl = async (req, res) => {
             .limit(parseInt(limit));
         //Total 
         const totalLogs = await Log.countDocuments({ url: url._id });
-        console.log(logs);
         
         return res.status(200).json({
             code: "API.LOG.LIST.ACCEPT",

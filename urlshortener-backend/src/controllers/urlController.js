@@ -6,7 +6,7 @@ const Log = require("../models/Log");
 const shortenUrl = async (req, res) => {
   try {
     const { nanoid } = await import('nanoid');
-    const { longUrl,name } = req.body;
+    const { longUrl,name,expiresAt } = req.body;
     const user = req.user;
 
     if (!validator.isURL(longUrl)) {
@@ -21,8 +21,8 @@ const shortenUrl = async (req, res) => {
     // Generate a unique short ID
     const shortId = nanoid(6);
     const shortUrl = `${process.env.url}/v1/${shortId}`;
-
-    const url = new Url({ longUrl, shortId, shortUrl, user: user._id, name });
+    
+    const url = new Url({ longUrl, shortId, shortUrl, user: user._id, name, expiresAt });
     await url.save();
   
     return res.status(201).json({
@@ -32,11 +32,12 @@ const shortenUrl = async (req, res) => {
       data: url
     });
   } catch (error) {
-    res.status(500).json({
+    console.error("Shorten URL Error:", error);
+    return res.status(500).json({
       code: "API.SHORTURL.CREATION.FAIL",
       message: "Internal Error",
       success: false,
-      error: error
+      error: error.message
     });
   }
 };
@@ -137,11 +138,14 @@ const deleteUrl = async (req, res) => {
 const redirectToUrl = async (req, res) => {
   try {
     const { shortened_id } = req.params;
-    console.log(shortened_id);
     const url = await Url.findOne({ shortId: shortened_id });
     
     if (!url) {
         return res.status(404).json({ error: "URL not found" });
+    }
+
+    if (url.expiresAt && new Date(url.expiresAt) < new Date()) {
+      return res.status(410).json({ message: "This URL has expired" });
     }
 
     url.clicks += 1;
